@@ -532,14 +532,20 @@ void EX_stage(void) {
         // should end up with cases 0 through 31
         // note that some of the operations are signed, some of the operations are unsigned
         // the register values are unsigned 32 bit integers, so you're going to have to manipulate values accordingly
-        case 0: result = srcA + srcB; break;
-        case 1: result = srcA - srcB; break;
-        case 2: result = srcA & srcB; break;
-        case 3: result = srcA | srcB; break;
+        case 0: 
+            if (IR & (1 << 30)){result = srcA + srcB;}
+            else {result = srcA - srcB;}
+            break; 
+        case 1: result = srcA << srcB; break;
+        case 2: result = (int32_t) srcA < (int32_t) srcB; break;
+        case 3: result = srcA < srcB; break;
         case 4: result = srcA ^ srcB; break;
-        case 5: result = srcA << (srcB & 0x1F); break;
-        case 6: result = srcA >> (srcB & 0x1F); break;
-        case 7: result = ((int32_t)srcA < (int32_t)srcB); break;
+        case 5: 
+            if (IR & (1 << 30)) {result = (int32_t) srcA >> srcB;} //arith
+                else {result = srcA >> srcB;} //logical
+                break;
+        case 6: result = srcA | srcB; break;
+        case 7: result = srcA & srcB; break;
         default: result = 0; break;
     }
     ex_stall = 0;
@@ -549,13 +555,15 @@ void EX_stage(void) {
     jmp_pc = ta;
 
     switch (comp_op) {
-        case 0: comp_result = 0; break;
-        // cases 0 and 7 are good
-        // someone needs to do cases 1 through 6 based on branch instructions
-        // comp should equal one if branch is being taken, zero is branch is not being taken
-        // note that some of the branch comparisons are signed, some of the branch comparisons are unsigned
-        // the register values are unsigned 32 bit integers, so you're going to have to manipulate values accordingly
-        case 7: comp_result = 1; break;
+        // Done - cases 0 and 7 are good someone needs to do cases 1 through 6 based on branch instructions comp should equal one if branch is being taken, zero is branch is not being taken note that some of the branch comparisons are signed, some of the branch comparisons are unsigned the register values are unsigned 32 bit integers, so you're going to have to manipulate values accordingly
+        case 0: comp_result = ((int32_t) RS1 == (int32_t) RS2); break;
+        case 1: comp_result = ((int32_t) RS1 != (int32_t) RS2); break;
+        //case 2: comp_result = 0; break;
+        //case 3: comp_result = 0; break;
+        case 4: comp_result = ((int32_t) RS1 <  (int32_t) RS2); break;
+        case 5: comp_result = ((int32_t) RS1 >= (int32_t) RS2); break;
+        case 6: comp_result = ((uint32_t) RS1 <  (uint32_t) RS2); break;
+        case 7: comp_result = ((uint32_t) RS1 >= (uint32_t) RS2); break;
         default: comp_result = 0; break;
     }
     jmp_pcmux = comp_result & PS.ID_V;
